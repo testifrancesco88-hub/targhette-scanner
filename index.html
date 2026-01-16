@@ -11,7 +11,7 @@ fullContent:
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Targhette Gemini">
-  <title>Targhette Scanner - Gemini</title>
+  <title>Targhette Scanner - Gemini 2.0</title>
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -42,7 +42,7 @@ fullContent:
   <script type="text/babel">
     const { useState, useRef, useEffect } = React;
 
-    // Componente Icona Helper (Renderizza SVG dalle stringhe sotto)
+    // Helper per Icone
     const Icon = ({ icon: IconString, size = 24, className = "" }) => {
       const ref = useRef(null);
       useEffect(() => {
@@ -64,7 +64,7 @@ fullContent:
       return <span ref={ref} className={className} style={{display: 'inline-flex', alignItems: 'center'}} />;
     };
 
-    // Definizioni SVG Path (Rimuoviamo la dipendenza esterna da Lucide per stabilità)
+    // Icone SVG
     const icons = {
       camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
       upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
@@ -81,12 +81,15 @@ fullContent:
       plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
       settings: '<path d="M12.22 2h-.44a2 2 0 0 1-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
       key: '<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/>',
-      zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>'
+      zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+      box: '<path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22v-9"/>'
     };
 
     function TarghetteScanner() {
-      // Config State - Usa una chiave separata per Gemini
+      // Config State
       const [apiKey, setApiKey] = useState(() => localStorage.getItem('gemini_key') || '');
+      // DEFAULT AGGIORNATO: Gemini 2.0 Flash
+      const [modelId, setModelId] = useState(() => localStorage.getItem('gemini_model') || 'gemini-2.0-flash');
       const [showSettings, setShowSettings] = useState(false);
 
       // App State
@@ -110,12 +113,14 @@ fullContent:
       const fileInputRef = useRef(null);
       const cameraInputRef = useRef(null);
       const targhettaRef = useRef(null);
-      const battistolliLogo = "data:image/webp;base64,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";
+      const battistolliLogo = "data:image/webp;base64,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";
       const tagli = [500, 200, 100, 50, 20, 10, 5];
 
-      const saveApiKey = (val) => {
-        setApiKey(val);
-        localStorage.setItem('gemini_key', val);
+      const saveSettings = (key, model) => {
+        setApiKey(key);
+        setModelId(model);
+        localStorage.setItem('gemini_key', key);
+        localStorage.setItem('gemini_model', model);
       };
 
       const handleFileUpload = (e) => {
@@ -143,8 +148,8 @@ fullContent:
         setError(null);
         
         try {
-          // Utilizziamo il modello Flash per velocità e leggerezza
-          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+          // Usa il modello configurato nelle impostazioni
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`, {
             method: "POST",
             headers: { 
               "Content-Type": "application/json"
@@ -198,10 +203,7 @@ Rispondi SOLO con un JSON valido (senza markdown) in questo formato esatto:
           }
 
           const data = await response.json();
-          // Estrai il testo dalla risposta di Gemini
           let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-          
-          // Pulizia del testo nel caso Gemini includa markdown ```json ... ```
           text = text.replace(/```json/g, '').replace(/```/g, '').trim();
 
           const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -222,10 +224,7 @@ Rispondi SOLO con un JSON valido (senza markdown) in questo formato esatto:
       const calculateTotals = (data) => {
         const types = data.targhette.map(t => t.tipo).filter(t => t !== null);
         let uniqueTypes = [...new Set(types)];
-        
-        // Fallback se non trova il tipo
         if (uniqueTypes.length === 0) uniqueTypes = ['B'];
-        
         if (uniqueTypes.length > 1) {
           setError(`Attenzione: Le targhette sembrano miste (${uniqueTypes.join(', ')}). Usa targhette dello stesso tipo.`);
         }
@@ -371,6 +370,60 @@ Rispondi SOLO con un JSON valido (senza markdown) in questo formato esatto:
         );
       };
 
+      // Componente Configurazione aggiornato
+      const SettingsModal = () => {
+        const [localKey, setLocalKey] = useState(apiKey);
+        const [localModel, setLocalModel] = useState(modelId);
+
+        return (
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+            <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-sm border border-slate-600 shadow-2xl">
+              <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <Icon icon={icons.settings} /> Configurazione
+              </h3>
+              
+              <div className="mb-4">
+                <label className="block text-slate-400 text-xs uppercase font-bold mb-2">Google Gemini API Key</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                    <Icon icon={icons.key} size={16} />
+                  </div>
+                  <input 
+                    type="password" 
+                    value={localKey} 
+                    onChange={(e) => setLocalKey(e.target.value)} 
+                    className="w-full pl-10 pr-4 py-3 bg-slate-900 border border-slate-600 rounded-xl text-white text-sm focus:border-emerald-500 focus:outline-none"
+                    placeholder="AIza..." 
+                  />
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-slate-400 text-xs uppercase font-bold mb-2">Modello AI (ID)</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                    <Icon icon={icons.box} size={16} />
+                  </div>
+                  <input 
+                    type="text" 
+                    value={localModel} 
+                    onChange={(e) => setLocalModel(e.target.value)} 
+                    className="w-full pl-10 pr-4 py-3 bg-slate-900 border border-slate-600 rounded-xl text-white text-sm focus:border-emerald-500 focus:outline-none font-mono"
+                    placeholder="es. gemini-2.0-flash" 
+                  />
+                </div>
+                <p className="text-slate-500 text-[10px] mt-1">Default: gemini-2.0-flash. Se non funziona, prova gemini-1.5-flash-latest</p>
+              </div>
+
+              <div className="flex gap-2">
+                 <button onClick={() => setShowSettings(false)} className="flex-1 py-3 bg-slate-700 font-bold text-white rounded-xl">Annulla</button>
+                 <button onClick={() => { saveSettings(localKey, localModel); setShowSettings(false); }} className="flex-1 py-3 bg-emerald-600 font-bold text-white rounded-xl">Salva</button>
+              </div>
+            </div>
+          </div>
+        );
+      };
+
       return (
         <div className="min-h-screen bg-slate-900 p-3 pb-safe">
           <div className="max-w-md mx-auto relative">
@@ -390,32 +443,7 @@ Rispondi SOLO con un JSON valido (senza markdown) in questo formato esatto:
             </div>
 
             {/* Config Modal */}
-            {showSettings && (
-              <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-                <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-sm border border-slate-600 shadow-2xl">
-                  <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    <Icon icon={icons.settings} /> Configurazione
-                  </h3>
-                  <div className="mb-4">
-                    <label className="block text-slate-400 text-xs uppercase font-bold mb-2">Google Gemini API Key</label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
-                        <Icon icon={icons.key} size={16} />
-                      </div>
-                      <input 
-                        type="password" 
-                        value={apiKey} 
-                        onChange={(e) => saveApiKey(e.target.value)} 
-                        className="w-full pl-10 pr-4 py-3 bg-slate-900 border border-slate-600 rounded-xl text-white text-sm focus:border-emerald-500 focus:outline-none"
-                        placeholder="AIza..." 
-                      />
-                    </div>
-                    <p className="text-slate-500 text-xs mt-2">La chiave viene salvata solo sul tuo dispositivo.</p>
-                  </div>
-                  <button onClick={() => setShowSettings(false)} className="w-full py-3 bg-emerald-600 font-bold text-white rounded-xl">Salva e Chiudi</button>
-                </div>
-              </div>
-            )}
+            {showSettings && <SettingsModal />}
 
             {!image ? (
               // Upload Area
@@ -451,7 +479,7 @@ Rispondi SOLO con un JSON valido (senza markdown) in questo formato esatto:
                   {!results && !loading && (
                     <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
                         <button onClick={analyzeImage} className="w-full flex items-center justify-center gap-3 px-5 py-4 bg-amber-500 hover:bg-amber-400 text-slate-900 rounded-xl font-bold shadow-lg transform transition-all active:scale-95">
-                            <Icon icon={icons.zap} size={24} /> Analizza con Gemini
+                            <Icon icon={icons.zap} size={24} /> Analizza con {modelId.replace('gemini-', '')}
                         </button>
                     </div>
                   )}
@@ -461,7 +489,7 @@ Rispondi SOLO con un JSON valido (senza markdown) in questo formato esatto:
                   <div className="bg-slate-800 rounded-2xl p-8 flex flex-col items-center justify-center text-center gap-4 animate-pulse">
                     <Icon icon={icons.loader} size={48} className="text-amber-500 animate-spin" />
                     <div className="space-y-1">
-                        <p className="text-white font-bold">Gemini sta analizzando...</p>
+                        <p className="text-white font-bold">Analisi in corso...</p>
                         <p className="text-slate-400 text-sm">Sto leggendo i tagli e i totali</p>
                     </div>
                   </div>
