@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1e293b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Targhette Scanner">
+  <title>Targhette Scanner - Battistolli</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/lucide-react@latest/dist/umd/lucide-react.min.js"></script>
+  <style>
+    body { margin: 0; padding: 0; }
+    * { -webkit-tap-highlight-color: transparent; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" data-type="module">
+    const { useState, useRef } = React;
+    const { Camera, Upload, Calculator, Trash2, Loader2, AlertCircle, RefreshCw, CheckCircle2, Printer, FileText, Mail, X, Star, Plus, User } = lucide;
+
+    // Lucide icons as React components
+    const Icon = ({ icon: IconComponent, size = 24, className = "" }) => {
+      const ref = useRef(null);
+      React.useEffect(() => {
+        if (ref.current) {
+          ref.current.innerHTML = '';
+          const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          svg.setAttribute('width', size);
+          svg.setAttribute('height', size);
+          svg.setAttribute('viewBox', '0 0 24 24');
+          svg.setAttribute('fill', 'none');
+          svg.setAttribute('stroke', 'currentColor');
+          svg.setAttribute('stroke-width', '2');
+          svg.setAttribute('stroke-linecap', 'round');
+          svg.setAttribute('stroke-linejoin', 'round');
+          svg.innerHTML = IconComponent;
+          ref.current.appendChild(svg);
+        }
+      }, [IconComponent, size]);
+      return <span ref={ref} className={className} style={{display: 'inline-flex', alignItems: 'center'}} />;
+    };
+
+    // Icon paths
+    const icons = {
+      camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
+      upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
+      calculator: '<rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/>',
+      trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
+      loader: '<line x1="12" x2="12" y1="2" y2="6"/><line x1="12" x2="12" y1="18" y2="22"/><line x1="4.93" x2="7.76" y1="4.93" y2="7.76"/><line x1="16.24" x2="19.07" y1="16.24" y2="19.07"/><line x1="2" x2="6" y1="12" y2="12"/><line x1="18" x2="22" y1="12" y2="12"/><line x1="4.93" x2="7.76" y1="19.07" y2="16.24"/><line x1="16.24" x2="19.07" y1="7.76" y2="4.93"/>',
+      alert: '<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>',
+      refresh: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+      check: '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+      printer: '<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/>',
+      file: '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/>',
+      mail: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
+      x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+      star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+      plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+      user: '<circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 1 0-16 0"/>'
+    };
+
+    function TarghetteScanner() {
+      const [image, setImage] = useState(null);
+      const [imageData, setImageData] = useState(null);
+      const [loading, setLoading] = useState(false);
+      const [error, setError] = useState(null);
+      const [results, setResults] = useState(null);
+      const [showTarjhetta, setShowTarjhetta] = useState(false);
+      const [showEmailModal, setShowEmailModal] = useState(false);
+      const [emailAddress, setEmailAddress] = useState('');
+      const [emailSent, setEmailSent] = useState(false);
+      const [savedEmails, setSavedEmails] = useState(() => {
+        try {
+          const saved = localStorage.getItem('targhette-scanner-emails');
+          return saved ? JSON.parse(saved) : [];
+        } catch {
+          return [];
+        }
+      });
+      const [showAddEmail, setShowAddEmail] = useState(false);
+      const [newEmailName, setNewEmailName] = useState('');
+      const fileInputRef = useRef(null);
+      const cameraInputRef = useRef(null);
+      const targhettaRef = useRef(null);
+
+      const tagli = [500, 200, 100, 50, 20, 10, 5];
+
+      const battistolliLogo = "data:image/webp;base64,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";
+
+      const handleFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            setImage(e.target.result);
+            setImageData(e.target.result.split(',')[1]);
+            setResults(null);
+            setError(null);
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+
+      const analyzeImage = async () => {
+        if (!imageData) return;
+        setLoading(true);
+        setError(null);
+        
+        try {
+          const response = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: "claude-sonnet-4-20250514",
+              max_tokens: 2000,
+              messages: [{
+                role: "user",
+                content: [
+                  { type: "image", source: { type: "base64", media_type: "image/jpeg", data: imageData } },
+                  { type: "text", text: `Analizza questa immagine che contiene targhette di conteggio banconote.
+
+Ogni targhetta ha:
+- Una banca (es. MPS, Intesa, etc.) in alto
+- Una data
+- TRE RIQUADRI con le lettere B, L, L3 (Buono, Logoro, L3) - UNO di questi ha una X o croce segnata
+- Una colonna TAGLIO (500, 200, 100, 50, 20, 10, 5)
+- Una colonna PEZZI con i conteggi
+
+IMPORTANTE - TIPO TARGHETTA:
+Cerca i tre riquadri B | L | L3 nella parte alta della targhetta.
+Identifica quale riquadro ha la X o croce segnata:
+- "B" = Buono (banconote in buono stato)
+- "L" = Logoro (banconote logore/usurate)
+- "L3" = L3 (terza categoria)
+
+IMPORTANTE - VALORI N/V:
+Per i tagli 200 e 100, spesso ci sono due valori separati:
+- Un numero con "N" = banconote NUOVE (nuova serie Europa)
+- Un numero con "V" = banconote VECCHIE (vecchia serie)
+- Il totale è scritto sotto come somma
+
+Rispondi SOLO con un JSON valido in questo formato:
+{
+  "targhette": [
+    {
+      "id": 1,
+      "banca": "nome banca",
+      "data": "GG/MM/AAAA",
+      "tipo": "B" oppure "L" oppure "L3",
+      "valori": {
+        "500": {"totale": numero, "nuove": null, "vecchie": null},
+        "200": {"totale": numero, "nuove": numero_o_null, "vecchie": numero_o_null},
+        "100": {"totale": numero, "nuove": numero_o_null, "vecchie": numero_o_null},
+        "50": {"totale": numero, "nuove": null, "vecchie": null},
+        "20": {"totale": numero, "nuove": null, "vecchie": null},
+        "10": {"totale": numero, "nuove": null, "vecchie": null},
+        "5": {"totale": numero, "nuove": null, "vecchie": null}
+      }
+    }
+  ]
+}` }
+                ]
+              }]
+            })
+          });
+
+          const data = await response.json();
+          if (data.error) throw new Error(data.error.message);
+          
+          const text = data.content.map(item => item.text || "").join("\n");
+          const jsonMatch = text.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            calculateTotals(JSON.parse(jsonMatch[0]));
+          } else {
+            throw new Error('Risposta non valida');
+          }
+        } catch (err) {
+          setError(err.message || 'Errore durante l\'analisi');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      const calculateTotals = (data) => {
+        const types = data.targhette.map(t => t.tipo).filter(t => t !== null);
+        const uniqueTypes = [...new Set(types)];
+        
+        if (uniqueTypes.length === 0) {
+          setError('Non è stato possibile identificare il tipo (B/L/L3) delle targhette.');
+          return;
+        }
+        if (uniqueTypes.length > 1) {
+          setError(`Le targhette non sono dello stesso tipo! Trovati: ${uniqueTypes.join(', ')}`);
+          return;
+        }
+        
+        const tipoComune = uniqueTypes[0];
+        const totali = {};
+        tagli.forEach(t => { totali[t] = { totale: 0, nuove: 0, vecchie: 0 }; });
+        
+        let grandTotalEuro = 0, grandTotalPezzi = 0;
+        const targhette = data.targhette.map(tag => {
+          let tagTotaleEuro = 0;
+          tagli.forEach(t => {
+            const val = tag.valori[t];
+            const totale = parseInt(val?.totale) || 0;
+            totali[t].totale += totale;
+            totali[t].nuove += parseInt(val?.nuove) || 0;
+            totali[t].vecchie += parseInt(val?.vecchie) || 0;
+            tagTotaleEuro += totale * t;
+          });
+          return { ...tag, totaleEuro: tagTotaleEuro };
+        });
+
+        tagli.forEach(t => {
+          grandTotalEuro += totali[t].totale * t;
+          grandTotalPezzi += totali[t].totale;
+        });
+
+        setResults({ targhette, totali, grandTotalEuro, grandTotalPezzi, tipoComune });
+      };
+
+      const reset = () => {
+        setImage(null);
+        setImageData(null);
+        setResults(null);
+        setError(null);
+        setShowTarjhetta(false);
+        setShowEmailModal(false);
+        setEmailAddress('');
+        setEmailSent(false);
+      };
+
+      const formatCurrency = (value) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0 }).format(value);
+
+      const generateEmailBody = () => {
+        if (!results) return '';
+        const { targhette, totali, grandTotalEuro, grandTotalPezzi, tipoComune } = results;
+        const banca = targhette[0]?.banca || 'BANCA';
+        const dataStr = targhette[0]?.data || new Date().toLocaleDateString('it-IT');
+        let body = `TARGHETTA RIEPILOGATIVA\n========================\n\nBanca: ${banca}\nData: ${dataStr}\nTipo: ${tipoComune === 'B' ? 'BUONO' : tipoComune === 'L' ? 'LOGORO' : 'L3'}\nTarghette: ${targhette.length}\n\nDETTAGLIO:\n`;
+        tagli.forEach(t => {
+          const tot = totali[t];
+          const nv = (t === 200 || t === 100) ? ` (N:${tot.nuove} V:${tot.vecchie})` : '';
+          body += `€${t}: ${tot.totale} pz${nv} = ${formatCurrency(tot.totale * t)}\n`;
+        });
+        body += `\n========================\nTOTALE: ${grandTotalPezzi} pz = ${formatCurrency(grandTotalEuro)}\n`;
+        return body;
+      };
+
+      const sendEmail = () => {
+        if (!emailAddress || !results) return;
+        const { targhette, grandTotalEuro, tipoComune } = results;
+        const subject = `Targhetta ${targhette[0]?.banca} - ${tipoComune} - ${formatCurrency(grandTotalEuro)}`;
+        window.location.href = `mailto:${emailAddress}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(generateEmailBody())}`;
+        setEmailSent(true);
+        setTimeout(() => { setShowEmailModal(false); setEmailSent(false); }, 2000);
+      };
+
+      const saveEmail = () => {
+        if (!emailAddress || !newEmailName) return;
+        const updated = [...savedEmails, { id: Date.now(), name: newEmailName, email: emailAddress }];
+        setSavedEmails(updated);
+        localStorage.setItem('targhette-scanner-emails', JSON.stringify(updated));
+        setShowAddEmail(false);
+        setNewEmailName('');
+      };
+
+      const deleteEmail = (id) => {
+        const updated = savedEmails.filter(e => e.id !== id);
+        setSavedEmails(updated);
+        localStorage.setItem('targhette-scanner-emails', JSON.stringify(updated));
+      };
+
+      const printTarjhetta = () => {
+        const content = targhettaRef.current;
+        if (!content) return;
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`<!DOCTYPE html><html><head><title>Targhetta</title><style>@page{size:5cm 15cm;margin:0}body{margin:0;font-family:Arial,sans-serif}</style></head><body>${content.innerHTML}</body></html>`);
+        printWindow.document.close();
+        printWindow.print();
+      };
+
+      const TarjhettaRiepilogo = ({ data }) => {
+        const { targhette, totali, grandTotalPezzi, tipoComune } = data;
+        const banca = targhette[0]?.banca || 'BANCA';
+        const dataStr = targhette[0]?.data || new Date().toLocaleDateString('it-IT');
+
+        return (
+          <div style={{width:'189px',minHeight:'567px',background:'white',border:'2px solid #333',margin:'0 auto',fontSize:'10px',display:'flex',flexDirection:'column'}}>
+            <div style={{background:'#1a1a2e',color:'white',padding:'10px',textAlign:'center'}}>
+              <img src={battistolliLogo} alt="Logo" style={{width:'40px',marginBottom:'5px'}} />
+              <div style={{fontSize:'20px',fontWeight:'bold'}}>{banca}</div>
+            </div>
+            <div style={{display:'flex',borderBottom:'1px solid #333',background:'#f5f5f5'}}>
+              <div style={{padding:'8px 10px',fontWeight:'bold',fontSize:'11px',width:'40px'}}>Data:</div>
+              <div style={{padding:'8px 10px',fontSize:'12px',fontWeight:'bold',flex:1}}>{dataStr}</div>
+            </div>
+            <div style={{display:'flex',borderBottom:'1px solid #333'}}>
+              {['B','L','L3'].map(t => (
+                <div key={t} style={{flex:1,textAlign:'center',padding:'10px 5px',fontWeight:'bold',fontSize:'16px',borderRight:t!=='L3'?'1px solid #333':'none',background:tipoComune===t?(t==='B'?'#2d5a27':t==='L'?'#92400e':'#6b21a8'):'white',color:tipoComune===t?'white':'#333'}}>{t} {tipoComune===t&&'✓'}</div>
+              ))}
+            </div>
+            <div style={{display:'flex',background:'#e0e0e0',borderBottom:'1px solid #333',fontWeight:'bold',fontSize:'10px'}}>
+              <div style={{width:'45px',padding:'8px 3px',textAlign:'center',borderRight:'1px solid #999'}}>TAGLIO</div>
+              <div style={{width:'35px',padding:'8px 3px',textAlign:'center',borderRight:'1px solid #999',background:'#d4edda'}}>N</div>
+              <div style={{width:'35px',padding:'8px 3px',textAlign:'center',borderRight:'1px solid #999',background:'#fff3cd'}}>V</div>
+              <div style={{flex:1,padding:'8px 3px',textAlign:'center'}}>PEZZI</div>
+            </div>
+            <div style={{display:'flex',flexDirection:'column',flex:1}}>
+              {tagli.map(t => {
+                const tot = totali[t];
+                const hasNV = t === 200 || t === 100;
+                return (
+                  <div key={t} style={{display:'flex',borderBottom:'1px solid #ccc',flex:1}}>
+                    <div style={{width:'45px',padding:'8px 3px',textAlign:'center',fontWeight:'bold',background:'#f0f0f0',borderRight:'1px solid #ddd',fontSize:'13px',display:'flex',alignItems:'center',justifyContent:'center'}}>{t}</div>
+                    <div style={{width:'35px',padding:'8px 3px',textAlign:'center',color:'#155724',fontWeight:'600',borderRight:'1px solid #ddd',fontSize:'13px',background:'#d4edda',display:'flex',alignItems:'center',justifyContent:'center'}}>{hasNV?tot.nuove:'-'}</div>
+                    <div style={{width:'35px',padding:'8px 3px',textAlign:'center',color:'#856404',fontWeight:'600',borderRight:'1px solid #ddd',fontSize:'13px',background:'#fff3cd',display:'flex',alignItems:'center',justifyContent:'center'}}>{hasNV?tot.vecchie:'-'}</div>
+                    <div style={{flex:1,padding:'8px 3px',textAlign:'center',fontWeight:'bold',fontSize:'13px',display:'flex',alignItems:'center',justifyContent:'center'}}>{tot.totale}</div>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{display:'flex',background:'#1a1a2e',color:'white',fontWeight:'bold'}}>
+              <div style={{width:'45px',padding:'10px 3px',textAlign:'center',borderRight:'1px solid #444',fontSize:'13px'}}>TOT</div>
+              <div style={{width:'35px',padding:'10px 3px',textAlign:'center',background:'#155724',color:'#4ade80',borderRight:'1px solid #444',fontSize:'13px'}}>{totali[200].nuove+totali[100].nuove}</div>
+              <div style={{width:'35px',padding:'10px 3px',textAlign:'center',background:'#7c5e00',color:'#fbbf24',borderRight:'1px solid #444',fontSize:'13px'}}>{totali[200].vecchie+totali[100].vecchie}</div>
+              <div style={{flex:1,padding:'10px 3px',textAlign:'center',fontSize:'13px'}}>{grandTotalPezzi}</div>
+            </div>
+            <div style={{background:'#f0f0f0',padding:'8px',textAlign:'center',fontSize:'8px',color:'#666',borderTop:'1px solid #333'}}>Somma {targhette.length} targhette</div>
+          </div>
+        );
+      };
+
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-3">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-5">
+              <img src={battistolliLogo} alt="Battistolli" className="w-16 h-auto mx-auto mb-2" />
+              <h1 className="text-2xl font-bold text-white mb-1">Targhette Scanner</h1>
+              <p className="text-slate-400 text-sm">Analizza e somma le targhette di conteggio</p>
+            </div>
+
+            {!image && (
+              <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700">
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <button onClick={() => cameraInputRef.current?.click()} className="flex items-center justify-center gap-3 px-5 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-semibold">
+                    <Icon icon={icons.camera} size={22} /> Scatta Foto
+                  </button>
+                  <button onClick={() => fileInputRef.current?.click()} className="flex items-center justify-center gap-3 px-5 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold">
+                    <Icon icon={icons.upload} size={22} /> Carica Immagine
+                  </button>
+                </div>
+                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+                <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handleFileUpload} className="hidden" />
+              </div>
+            )}
+
+            {image && (
+              <div className="bg-slate-800/50 rounded-2xl p-3 border border-slate-700 mb-4">
+                <div className="relative">
+                  <img src={image} alt="Targhette" className="w-full max-h-48 object-contain rounded-lg" />
+                  <button onClick={reset} className="absolute top-2 right-2 p-2 bg-red-500/80 hover:bg-red-500 text-white rounded-full">
+                    <Icon icon={icons.trash} size={18} />
+                  </button>
+                </div>
+                {!results && !loading && (
+                  <button onClick={analyzeImage} className="w-full mt-3 flex items-center justify-center gap-3 px-5 py-3 bg-amber-500 hover:bg-amber-400 text-slate-900 rounded-xl font-bold">
+                    <Icon icon={icons.calculator} size={22} /> Analizza e Somma
+                  </button>
+                )}
+                {loading && (
+                  <div className="mt-4 flex flex-col items-center gap-2 text-amber-400 py-4">
+                    <Icon icon={icons.loader} size={32} className="animate-spin" />
+                    <span className="text-sm">Analisi in corso...</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {error && (
+              <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 mb-4 flex items-center gap-3">
+                <Icon icon={icons.alert} size={22} className="text-red-400" />
+                <span className="text-red-300 text-sm">{error}</span>
+              </div>
+            )}
+
+            {results && (
+              <div className="space-y-4">
+                <div className="bg-gradient-to-br from-emerald-900/50 to-emerald-800/30 rounded-2xl p-4 border border-emerald-600/30">
+                  <div className="flex items-center justify-center gap-3 mb-4">
+                    <h3 className="text-xl font-bold text-white">📋 RIEPILOGO</h3>
+                    <span className={`text-sm font-bold px-3 py-1 rounded-full ${results.tipoComune==='B'?'bg-emerald-600':results.tipoComune==='L'?'bg-amber-600':'bg-purple-600'} text-white`}>
+                      {results.tipoComune==='B'?'BUONO':results.tipoComune==='L'?'LOGORO':'L3'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-center gap-2 mb-4 text-emerald-400 text-sm">
+                    <Icon icon={icons.check} size={18} />
+                    <span>Targhette valide • {results.targhette.length} sommate</span>
+                  </div>
+                  <div className="text-center text-white">
+                    <div className="text-3xl font-bold text-emerald-400">{formatCurrency(results.grandTotalEuro)}</div>
+                    <div className="text-slate-400">{results.grandTotalPezzi} pezzi totali</div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  {!showTarjhetta ? (
+                    <button onClick={() => setShowTarjhetta(true)} className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-semibold flex items-center justify-center gap-2">
+                      <Icon icon={icons.file} size={20} /> Genera Targhetta
+                    </button>
+                  ) : (
+                    <div className="flex gap-3">
+                      <button onClick={printTarjhetta} className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold flex items-center justify-center gap-2">
+                        <Icon icon={icons.printer} size={20} /> Stampa
+                      </button>
+                      <button onClick={() => setShowEmailModal(true)} className="flex-1 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-semibold flex items-center justify-center gap-2">
+                        <Icon icon={icons.mail} size={20} /> Email
+                      </button>
+                    </div>
+                  )}
+                  <button onClick={reset} className="w-full py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2">
+                    <Icon icon={icons.refresh} size={20} /> Nuova Scansione
+                  </button>
+                </div>
+
+                {showTarjhetta && (
+                  <div className="mt-4">
+                    <h3 className="text-lg font-bold text-white mb-3 text-center">📄 Targhetta Generata</h3>
+                    <div ref={targhettaRef} className="flex justify-center">
+                      <TarjhettaRiepilogo data={results} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {showEmailModal && (
+              <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-700">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                      <Icon icon={icons.mail} size={24} /> Invia Email
+                    </h3>
+                    <button onClick={() => setShowEmailModal(false)} className="p-2 hover:bg-slate-700 rounded-full">
+                      <Icon icon={icons.x} size={20} className="text-slate-400" />
+                    </button>
+                  </div>
+                  
+                  {!emailSent ? (
+                    <>
+                      {savedEmails.length > 0 && (
+                        <div className="mb-4 space-y-2">
+                          {savedEmails.map(saved => (
+                            <div key={saved.id} onClick={() => setEmailAddress(saved.email)} className={`flex items-center justify-between p-2 rounded-lg cursor-pointer ${emailAddress===saved.email?'bg-purple-600/30 border border-purple-500':'bg-slate-700/50 hover:bg-slate-700'}`}>
+                              <div><p className="text-white text-sm font-medium">{saved.name}</p><p className="text-slate-400 text-xs">{saved.email}</p></div>
+                              <button onClick={(e) => { e.stopPropagation(); deleteEmail(saved.id); }} className="p-1 hover:bg-red-500/20 rounded">
+                                <Icon icon={icons.trash} size={14} className="text-red-400" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div className="flex gap-2 mb-4">
+                        <input type="email" value={emailAddress} onChange={(e) => setEmailAddress(e.target.value)} placeholder="email@esempio.com" className="flex-1 px-4 py-3 bg-slate-900 border border-slate-600 rounded-xl text-white" />
+                        {emailAddress && !savedEmails.find(e => e.email === emailAddress) && (
+                          <button onClick={() => setShowAddEmail(!showAddEmail)} className="px-3 py-3 bg-amber-600 text-white rounded-xl">
+                            <Icon icon={icons.plus} size={20} />
+                          </button>
+                        )}
+                      </div>
+                      {showAddEmail && (
+                        <div className="flex gap-2 mb-4">
+                          <input type="text" value={newEmailName} onChange={(e) => setNewEmailName(e.target.value)} placeholder="Nome contatto" className="flex-1 px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white text-sm" />
+                          <button onClick={saveEmail} className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm">Salva</button>
+                        </div>
+                      )}
+                      <div className="flex gap-3">
+                        <button onClick={() => setShowEmailModal(false)} className="flex-1 py-3 bg-slate-700 text-white rounded-xl font-semibold">Annulla</button>
+                        <button onClick={sendEmail} disabled={!emailAddress} className="flex-1 py-3 bg-purple-600 disabled:bg-slate-600 text-white rounded-xl font-semibold">Invia</button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Icon icon={icons.check} size={48} className="text-emerald-400 mx-auto mb-4" />
+                      <p className="text-white font-semibold">Email pronta!</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<TarghetteScanner />);
+  </script>
+</body>
+</html>
