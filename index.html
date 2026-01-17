@@ -10,6 +10,7 @@
   <title>Targhette Scanner</title>
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body { 
@@ -467,7 +468,7 @@
     <div id="targhettaPreview"></div>
     <div class="btn-row no-print">
       <button class="btn btn-print" onclick="window.print()">🖨️ Stampa</button>
-      <button class="btn btn-email" onclick="inviaEmail()">📧 Email</button>
+      <button class="btn btn-email" onclick="scaricaImmagine()">📥 Salva PNG</button>
     </div>
   </div>
 
@@ -747,23 +748,44 @@ Rispondi SOLO con JSON valido (nessun testo prima o dopo):
       document.getElementById('targhettaSection').scrollIntoView({ behavior: 'smooth' });
     }
     
-    function inviaEmail() {
+    async function scaricaImmagine() {
       if (!results) return;
       
-      const tipoLabel = results.tipo === 'B' ? 'BUONO' : results.tipo === 'L' ? 'LOGORO' : 'L3';
-      const subject = `Targhetta ${results.banca} - ${tipoLabel} - ${results.data} - €${results.totEuro.toLocaleString('it-IT')}`;
+      const targhetta = document.querySelector('.targhetta-preview');
+      if (!targhetta) return;
       
-      let body = `TARGHETTA RIEPILOGATIVA\n========================\n\nBanca: ${results.banca}\nData: ${results.data}\nTipo: ${tipoLabel}\n\nDETTAGLIO:\n----------\n`;
-      
-      [500, 200, 100, 50, 20, 10, 5].forEach(tag => {
-        const t = results.totali[tag];
-        const nv = (tag === 200 || tag === 100) ? ` (N:${t.nuove} V:${t.vecchie})` : '';
-        body += `€${tag}: ${t.pezzi} pz${nv} = €${t.euro.toLocaleString('it-IT')}\n`;
-      });
-      
-      body += `\n========================\nTOTALE: ${results.totPezzi} pz = €${results.totEuro.toLocaleString('it-IT')}\nNuove: ${results.totN} | Vecchie: ${results.totV}\n========================\n\nGenerato da Targhette Scanner - Battistolli`;
-      
-      window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      try {
+        // Show loading
+        const btn = document.querySelector('.btn-email');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '⏳ Generazione...';
+        btn.disabled = true;
+        
+        const canvas = await html2canvas(targhetta, {
+          scale: 3,
+          backgroundColor: '#ffffff',
+          useCORS: true
+        });
+        
+        // Convert to PNG and download
+        const link = document.createElement('a');
+        const tipoLabel = results.tipo === 'B' ? 'BUONO' : results.tipo === 'L' ? 'LOGORO' : 'L3';
+        const dataFile = results.data.replace(/\//g, '-');
+        link.download = `Targhetta_${results.banca}_${tipoLabel}_${dataFile}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        
+        // Restore button
+        btn.innerHTML = '✅ Salvato!';
+        setTimeout(() => {
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+        }, 2000);
+        
+      } catch (error) {
+        console.error('Errore generazione immagine:', error);
+        alert('Errore nella generazione dell\'immagine');
+      }
     }
     
     function showError(msg) {
