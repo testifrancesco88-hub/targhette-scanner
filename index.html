@@ -492,6 +492,52 @@
     .tab-content { display: none; }
     .tab-content.active { display: block; }
     
+    /* Edit Mode */
+    .edit-toggle-btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid #f59e0b;
+      background: transparent;
+      color: #f59e0b;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-left: auto;
+    }
+    .edit-toggle-btn.active {
+      background: #f59e0b;
+      color: #1e293b;
+    }
+    .edit-section {
+      margin: 12px 0;
+      padding: 12px;
+      background: rgba(245, 158, 11, 0.1);
+      border-radius: 10px;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .edit-section .form-row {
+      margin-bottom: 10px;
+    }
+    .edit-section .form-group input {
+      background: #1e293b;
+      border-color: #f59e0b;
+    }
+    .edit-tipo {
+      margin-bottom: 0;
+    }
+    .edit-grid {
+      background: rgba(0,0,0,0.2);
+      padding: 10px;
+      border-radius: 8px;
+    }
+    .results-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    
     @media print {
       body { background: white; padding: 0; }
       .no-print { display: none !important; }
@@ -693,7 +739,28 @@
     <div class="results-header">
       <h3>📋 RIEPILOGO</h3>
       <span id="tipoBadge" class="tipo-badge b">BUONO</span>
+      <button class="edit-toggle-btn" id="editToggleBtn" onclick="toggleEdit()">✏️ Modifica</button>
     </div>
+    
+    <!-- Editable Info (hidden by default) -->
+    <div id="editInfoSection" class="edit-section hidden">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Banca</label>
+          <input type="text" id="editBanca" value="">
+        </div>
+        <div class="form-group">
+          <label>Data</label>
+          <input type="text" id="editData" value="">
+        </div>
+      </div>
+      <div class="tipo-selector edit-tipo">
+        <button class="tipo-btn" data-tipo="B" onclick="setTipoEdit('B')">B</button>
+        <button class="tipo-btn" data-tipo="L" onclick="setTipoEdit('L')">L</button>
+        <button class="tipo-btn" data-tipo="L3" onclick="setTipoEdit('L3')">L3</button>
+      </div>
+    </div>
+    
     <div class="results-grid">
       <div class="result-item">
         <div class="label">TOTALE PEZZI</div>
@@ -713,19 +780,66 @@
       </div>
     </div>
     
-    <table class="detail-table">
+    <!-- Read-only table (shown by default) -->
+    <table class="detail-table" id="readOnlyTable">
       <thead>
         <tr><th>Taglio</th><th>N</th><th>V</th><th>Pezzi</th><th>Euro</th></tr>
       </thead>
       <tbody id="detailBody"></tbody>
     </table>
     
-    <div class="targhette-detail">
+    <!-- Editable table (hidden by default) -->
+    <div id="editTableSection" class="edit-section hidden">
+      <div class="tagli-grid edit-grid">
+        <div class="header">Taglio</div>
+        <div class="header" style="color:#22c55e">N</div>
+        <div class="header" style="color:#f59e0b">V</div>
+        <div class="header">Pezzi</div>
+        
+        <div class="taglio-label">€500</div>
+        <div>-</div>
+        <div>-</div>
+        <input type="number" inputmode="numeric" id="edit_500" value="0" onchange="updateEditTotals()">
+        
+        <div class="taglio-label">€200</div>
+        <input type="number" inputmode="numeric" class="col-n" id="edit_200n" value="0" onchange="updateEditTotals()">
+        <input type="number" inputmode="numeric" class="col-v" id="edit_200v" value="0" onchange="updateEditTotals()">
+        <input type="number" inputmode="numeric" id="edit_200" readonly>
+        
+        <div class="taglio-label">€100</div>
+        <input type="number" inputmode="numeric" class="col-n" id="edit_100n" value="0" onchange="updateEditTotals()">
+        <input type="number" inputmode="numeric" class="col-v" id="edit_100v" value="0" onchange="updateEditTotals()">
+        <input type="number" inputmode="numeric" id="edit_100" readonly>
+        
+        <div class="taglio-label">€50</div>
+        <div>-</div>
+        <div>-</div>
+        <input type="number" inputmode="numeric" id="edit_50" value="0" onchange="updateEditTotals()">
+        
+        <div class="taglio-label">€20</div>
+        <div>-</div>
+        <div>-</div>
+        <input type="number" inputmode="numeric" id="edit_20" value="0" onchange="updateEditTotals()">
+        
+        <div class="taglio-label">€10</div>
+        <div>-</div>
+        <div>-</div>
+        <input type="number" inputmode="numeric" id="edit_10" value="0" onchange="updateEditTotals()">
+        
+        <div class="taglio-label">€5</div>
+        <div>-</div>
+        <div>-</div>
+        <input type="number" inputmode="numeric" id="edit_5" value="0" onchange="updateEditTotals()">
+      </div>
+      <button class="btn btn-primary" onclick="applyEdits()" style="margin-top:12px">✅ APPLICA MODIFICHE</button>
+    </div>
+    
+    <div class="targhette-detail" id="targhetteDetailSection">
       <h4>📝 Dettaglio Targhette Analizzate</h4>
       <div id="targhetteDetail"></div>
     </div>
     
-    <button class="btn btn-success" onclick="mostraTarghetta()">📄 GENERA TARGHETTA</button>
+    <button class="btn btn-success" onclick="mostraTarghetta()" id="generaBtn">📄 GENERA TARGHETTA</button>
     <button class="btn btn-secondary" onclick="reset()">🔄 Nuova Scansione</button>
   </div>
 
@@ -746,6 +860,8 @@
     let results = null;
     let currentMode = 'auto';
     let tipoManual = 'B';
+    let isEditMode = false;
+    let tipoEdit = 'B';
     
     // Set today's date for manual input
     document.getElementById('manualData').valueAsDate = new Date();
@@ -1199,6 +1315,149 @@ Rispondi SOLO con JSON valido (nessun testo prima o dopo):
       document.getElementById('targhetteDetail').innerHTML = detailHtml || '<div style="color:#6ee7b7;font-size:12px">Nessuna targhetta con valori</div>';
       
       document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    function toggleEdit() {
+      isEditMode = !isEditMode;
+      const btn = document.getElementById('editToggleBtn');
+      btn.classList.toggle('active', isEditMode);
+      btn.textContent = isEditMode ? '❌ Annulla' : '✏️ Modifica';
+      
+      document.getElementById('editInfoSection').classList.toggle('hidden', !isEditMode);
+      document.getElementById('editTableSection').classList.toggle('hidden', !isEditMode);
+      document.getElementById('readOnlyTable').classList.toggle('hidden', isEditMode);
+      document.getElementById('targhetteDetailSection').classList.toggle('hidden', isEditMode);
+      document.getElementById('generaBtn').classList.toggle('hidden', isEditMode);
+      
+      if (isEditMode && results) {
+        // Populate edit fields with current values
+        document.getElementById('editBanca').value = results.banca || '';
+        document.getElementById('editData').value = results.data || '';
+        tipoEdit = results.tipo || 'B';
+        updateEditTipoButtons();
+        
+        // Populate values
+        const tagli = [500, 200, 100, 50, 20, 10, 5];
+        tagli.forEach(tag => {
+          const t = results.totali[tag];
+          if (tag === 200 || tag === 100) {
+            document.getElementById(`edit_${tag}n`).value = t.nuove || 0;
+            document.getElementById(`edit_${tag}v`).value = t.vecchie || 0;
+            document.getElementById(`edit_${tag}`).value = t.pezzi || 0;
+          } else {
+            document.getElementById(`edit_${tag}`).value = t.pezzi || 0;
+          }
+        });
+      }
+    }
+    
+    function setTipoEdit(t) {
+      tipoEdit = t;
+      updateEditTipoButtons();
+    }
+    
+    function updateEditTipoButtons() {
+      document.querySelectorAll('.edit-tipo .tipo-btn').forEach(btn => {
+        btn.classList.remove('active-b', 'active-l', 'active-l3');
+        if (btn.dataset.tipo === tipoEdit) {
+          btn.classList.add('active-' + tipoEdit.toLowerCase());
+        }
+      });
+    }
+    
+    function updateEditTotals() {
+      // Update 200 and 100 totals
+      [200, 100].forEach(tag => {
+        const n = parseInt(document.getElementById(`edit_${tag}n`).value) || 0;
+        const v = parseInt(document.getElementById(`edit_${tag}v`).value) || 0;
+        document.getElementById(`edit_${tag}`).value = n + v;
+      });
+      
+      // Update summary totals
+      const tagli = [500, 200, 100, 50, 20, 10, 5];
+      let totPezzi = 0, totEuro = 0, totN = 0, totV = 0;
+      
+      tagli.forEach(tag => {
+        const pezzi = parseInt(document.getElementById(`edit_${tag}`).value) || 0;
+        totPezzi += pezzi;
+        totEuro += pezzi * tag;
+        
+        if (tag === 200 || tag === 100) {
+          totN += parseInt(document.getElementById(`edit_${tag}n`).value) || 0;
+          totV += parseInt(document.getElementById(`edit_${tag}v`).value) || 0;
+        }
+      });
+      
+      document.getElementById('totPezzi').textContent = totPezzi;
+      document.getElementById('totEuro').textContent = '€' + totEuro.toLocaleString('it-IT');
+      document.getElementById('totN').textContent = totN;
+      document.getElementById('totV').textContent = totV;
+    }
+    
+    function applyEdits() {
+      if (!results) return;
+      
+      // Update results object with edited values
+      results.banca = document.getElementById('editBanca').value;
+      results.data = document.getElementById('editData').value;
+      results.tipo = tipoEdit;
+      
+      const tagli = [500, 200, 100, 50, 20, 10, 5];
+      let totPezzi = 0, totEuro = 0, totN = 0, totV = 0;
+      
+      tagli.forEach(tag => {
+        const pezzi = parseInt(document.getElementById(`edit_${tag}`).value) || 0;
+        let nuove = 0, vecchie = 0;
+        
+        if (tag === 200 || tag === 100) {
+          nuove = parseInt(document.getElementById(`edit_${tag}n`).value) || 0;
+          vecchie = parseInt(document.getElementById(`edit_${tag}v`).value) || 0;
+          totN += nuove;
+          totV += vecchie;
+        }
+        
+        results.totali[tag] = { pezzi, nuove, vecchie, euro: pezzi * tag };
+        totPezzi += pezzi;
+        totEuro += pezzi * tag;
+      });
+      
+      results.totPezzi = totPezzi;
+      results.totEuro = totEuro;
+      results.totN = totN;
+      results.totV = totV;
+      
+      // Update badge
+      const badge = document.getElementById('tipoBadge');
+      badge.textContent = tipoEdit === 'B' ? 'BUONO' : tipoEdit === 'L' ? 'LOGORO' : 'L3';
+      badge.className = 'tipo-badge ' + tipoEdit.toLowerCase();
+      
+      // Update read-only table
+      let html = '';
+      tagli.forEach(tag => {
+        const t = results.totali[tag];
+        const hasNV = tag === 200 || tag === 100;
+        html += `<tr>
+          <td>€${tag}</td>
+          <td class="col-n">${hasNV ? t.nuove : '-'}</td>
+          <td class="col-v">${hasNV ? t.vecchie : '-'}</td>
+          <td>${t.pezzi}</td>
+          <td>€${t.euro.toLocaleString('it-IT')}</td>
+        </tr>`;
+      });
+      document.getElementById('detailBody').innerHTML = html;
+      
+      // Exit edit mode
+      toggleEdit();
+      
+      // Show confirmation
+      const btn = document.getElementById('generaBtn');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '✅ Modifiche applicate!';
+      btn.style.background = '#22c55e';
+      setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.style.background = '';
+      }, 2000);
     }
     
     function showError(msg) {
